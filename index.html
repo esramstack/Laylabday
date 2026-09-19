@@ -596,19 +596,6 @@
     100%{transform:translate3d(-8px,-104vh,0) scale(1.05);opacity:0}
   }
   @media (prefers-reduced-motion:reduce){ .gate-ambient{display:none} }
-  .sound-tip{
-    position:fixed;z-index:46;
-    top:calc(env(safe-area-inset-top,0px) + 66px);right:14px;
-    max-width:min(16rem,calc(100vw - 28px));
-    padding:10px 14px;border-radius:14px;
-    font-size:.78rem;line-height:1.45;color:var(--cream);
-    background:rgba(14,20,44,.82);border:1px solid var(--veil-line);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    box-shadow:0 14px 34px -18px rgba(0,0,0,.9);
-    opacity:0;transform:translateY(-8px);pointer-events:auto;cursor:pointer;
-    transition:opacity .5s ease,transform .5s cubic-bezier(.2,.8,.2,1);
-  }
-  .sound-tip[data-on="true"]{opacity:1;transform:translateY(0)}
 
   /* ---------- closing ---------- */
   .closing{text-align:center;display:flex;flex-direction:column;align-items:center;gap:18px}
@@ -1403,30 +1390,13 @@
   // iOS can suspend the context behind our back; any touch re-arms it
   document.addEventListener("pointerdown", function(){ Music.nudge(); }, { passive: true });
 
-  /* iOS: Web Audio obeys the ringer switch, so say so once if it might be the cause */
-  var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
-               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  var hintShown = false;
-  function silentSwitchHint(){
-    if (!IS_IOS || hintShown) return;
-    hintShown = true;
-    var tip = document.createElement("div");
-    tip.className = "sound-tip";
-    tip.innerHTML = "No sound? Flip the side switch off silent 🔕";
-    document.body.appendChild(tip);
-    setTimeout(function(){ tip.setAttribute("data-on", "true"); }, 60);
-    setTimeout(function(){ tip.setAttribute("data-on", "false"); }, 7200);
-    setTimeout(function(){ if (tip.parentNode) tip.parentNode.removeChild(tip); }, 8400);
-    tip.addEventListener("click", function(){ tip.setAttribute("data-on", "false"); });
-  }
-
   /* ---------------- traits ---------------- */
   var TRAITS = [
-    { e: "✨", n: "Your smile", b: "It shows up before you say anything, and somehow the whole room adjusts to it." },
-    { e: "🌸", n: "Your softness", b: "You are gentle with people in a way that never looks like effort. That is rarer than you think." },
-    { e: "💬", n: "The way you talk", b: "Half thought, half laugh. You make ordinary conversations feel like something worth keeping." },
-    { e: "🤍", n: "Your kindness", b: "The quiet kind. No audience, no announcement, you just do it and move on." },
-    { e: "🎀", n: "Your little reactions", b: "The pause, the eyebrow, the tiny gasp. Completely unfiltered and completely you." }
+    { e: "\u2728", n: "Your smile", b: "It shows up before you say anything, and somehow the whole room adjusts to it." },
+    { e: "\ud83c\udf38", n: "Your softness", b: "You are gentle with people in a way that never looks like effort. That is rarer than you think." },
+    { e: "\ud83d\udcac", n: "The way you talk", b: "Half thought, half laugh. You make ordinary conversations feel like something worth keeping." },
+    { e: "\ud83e\udd0d", n: "Your kindness", b: "The quiet kind. No audience, no announcement, you just do it and move on." },
+    { e: "\ud83c\udf80", n: "Your little reactions", b: "The pause, the eyebrow, the tiny gasp. Completely unfiltered and completely you." }
   ];
   var traitBox = document.getElementById("traits");
   TRAITS.forEach(function(t, i){
@@ -1475,7 +1445,7 @@
     wishBtn.textContent = "Light it again";
     wishMsg.style.opacity = "0";
     setTimeout(function(){
-      wishMsg.textContent = "Wish locked in. Nobody else needs to know it. 🤍";
+      wishMsg.textContent = "Wish locked in. Nobody else needs to know it. \ud83e\udd0d";
       wishMsg.style.opacity = "1";
     }, 420);
     var r = wishCard.getBoundingClientRect();
@@ -1944,7 +1914,6 @@
     if (Music.available()){
       syncSound(Music.start());
       soundBtn.setAttribute("data-on", "true");
-      timers.push(setTimeout(silentSwitchHint, 2600));
     }
     gate.setAttribute("data-gone", "true");
     gate.setAttribute("aria-hidden", "true");
