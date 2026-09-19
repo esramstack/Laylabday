@@ -1,0 +1,15 @@
+Your domain is already filled in. Do NOT open index.html in an editor.
+
+The file contains very long single lines (the embedded images). Some
+editors and online tools silently clip long lines, which is what broke
+the last copy: the images were cut from 159,683 characters to 166 and
+the file ended mid-script, so no JavaScript ran and nothing responded
+to taps.
+
+Just upload this folder as-is.
+
+  vercel --prod
+
+Then re-scrape the link at https://developers.facebook.com/tools/debug/
+so WhatsApp picks up the preview image, and send the link to yourself
+first to check it.
