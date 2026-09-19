@@ -1,0 +1,16 @@
+DEPLOY CHECKLIST
+================
+
+Everything here sits flat at the site root. Do not nest it in /public
+(that folder only applies to framework projects, not plain static sites).
+
+1. Deploy this folder once to get your URL.
+2. Open index.html, find SITE_URL, replace all 5 occurrences with that
+   URL, no trailing slash. Example: https://layla-birthday.vercel.app
+3. Deploy again.
+4. Re-scrape the link at https://developers.facebook.com/tools/debug/
+   so WhatsApp picks up the preview image.
+5. Send the link to yourself first and confirm the card looks right.
+
+The preview image will not appear until step 2 is done. Link scrapers
+cannot resolve relative paths, so og:image must be a full absolute URL.
