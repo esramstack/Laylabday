@@ -558,7 +558,7 @@
 
   /* ---------- sound toggle ---------- */
   .sound-btn{
-    position:fixed;z-index:35;
+    position:fixed;z-index:45;   /* above the gate (40) and intro (39), below the game (50) */
     top:calc(env(safe-area-inset-top,0px) + 14px);right:14px;
     width:42px;height:42px;border-radius:50%;display:grid;place-items:center;
     border:1px solid var(--veil-line);background:rgba(10,15,34,.55);
@@ -597,7 +597,7 @@
   }
   @media (prefers-reduced-motion:reduce){ .gate-ambient{display:none} }
   .sound-tip{
-    position:fixed;z-index:36;
+    position:fixed;z-index:46;
     top:calc(env(safe-area-inset-top,0px) + 66px);right:14px;
     max-width:min(16rem,calc(100vw - 28px));
     padding:10px 14px;border-radius:14px;
@@ -1177,14 +1177,21 @@
       if (!m) return 440;
       return 440 * Math.pow(2, (NOTES[m[1]] + (parseInt(m[2], 10) + 1) * 12 - 69) / 12);
     }
-    var CHORDS = [
-      ["Ab2","Eb3","C4","G4"],
-      ["F2","C3","Ab3","Eb4"],
-      ["Db2","Ab2","F3","C4"],
-      ["Eb2","Bb2","G3","C4"]
+    /* A slow lullaby in A-flat major: I - vi - IV - V, with a music-box
+       melody over a warm pad and a soft root underneath. */
+    var BEAT = 0.92;
+    var BAR = BEAT * 8;
+    var SONG = [
+      { pad:["Eb3","Ab3","C4","G4"],  bass:"Ab2",
+        mel:[[0,"Eb5"],[1.5,"C5"],[3,"Eb5"],[4.5,"G5"],[6.5,"Ab5"]] },
+      { pad:["C3","F3","Ab3","Eb4"],  bass:"F2",
+        mel:[[0,"F5"],[1.5,"Eb5"],[3,"C5"],[5,"Ab4"]] },
+      { pad:["Ab2","Db3","F3","C4"],  bass:"Db2",
+        mel:[[0,"Ab4"],[1.5,"C5"],[3,"F5"],[4.5,"Eb5"],[6.5,"C5"]] },
+      { pad:["Bb2","Eb3","G3","C4"],  bass:"Eb2",
+        mel:[[0,"Bb4"],[1.5,"C5"],[3,"Bb4"],[4.5,"G4"],[6,"Eb5"]] }
     ];
-    var SPARKLE = ["Eb4","F4","G4","Ab4","Bb4","C5","Eb5","F5","Ab5"];
-    var BAR = 8.4;
+    var SHIMMER = ["Eb6","Ab5","C6","Bb5"];
 
     var ctx = null, master = null, dry = null, wet = null, timer = null;
     var idx = 0, on = false, ready = false;
@@ -1231,19 +1238,63 @@
       o.start(t); o.stop(t + 3);
     }
 
+    // music box: a struck sine with a quiet upper partial, decaying gently
+    function mbox(freq, t, vol){
+      var v = vol || 0.06;
+      var o1 = ctx.createOscillator(), o2 = ctx.createOscillator();
+      o1.type = "sine"; o1.frequency.value = freq;
+      o2.type = "sine"; o2.frequency.value = freq * 2.004;
+      var g1 = ctx.createGain(), g2 = ctx.createGain();
+      g1.gain.setValueAtTime(0.0001, t);
+      g1.gain.linearRampToValueAtTime(v, t + .012);
+      g1.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+      g2.gain.setValueAtTime(0.0001, t);
+      g2.gain.linearRampToValueAtTime(v * .26, t + .008);
+      g2.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+      o1.connect(g1); o2.connect(g2);
+      g1.connect(dry); g1.connect(wet);
+      g2.connect(dry); g2.connect(wet);
+      o1.start(t); o2.start(t);
+      o1.stop(t + 2.5); o2.stop(t + 1.2);
+    }
+
+    // soft root note under the chord
+    function bassNote(freq, t, dur){
+      var o = ctx.createOscillator();
+      o.type = "sine"; o.frequency.value = freq;
+      var lp = ctx.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 320;
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.055, t + .9);
+      g.gain.linearRampToValueAtTime(0.038, t + dur * .75);
+      g.gain.linearRampToValueAtTime(0.0001, t + dur);
+      o.connect(lp); lp.connect(g); g.connect(dry);
+      o.start(t); o.stop(t + dur + .2);
+    }
+
     function bar(){
       if (!ctx) return;
       var t = ctx.currentTime + .05;
-      var chord = CHORDS[idx % CHORDS.length];
-      for (var i = 0; i < chord.length; i++) pad(nf(chord[i]), t, BAR);
-      var beats = [1.1, 2.9, 4.6, 6.3, 7.4];
-      for (var b = 0; b < beats.length; b++){
-        if (Math.random() < .28) continue;
-        var n = SPARKLE[(Math.random() * SPARKLE.length) | 0];
-        chime(nf(n), t + beats[b], 0.034 + Math.random() * 0.024);
+      var step = SONG[idx % SONG.length];
+
+      for (var i = 0; i < step.pad.length; i++) pad(nf(step.pad[i]), t, BAR);
+      bassNote(nf(step.bass), t, BAR);
+
+      for (var m = 0; m < step.mel.length; m++){
+        var when = t + step.mel[m][0] * BEAT;
+        var vol = 0.062 - m * 0.004 + Math.random() * 0.008;   // slight human unevenness
+        mbox(nf(step.mel[m][1]), when + (Math.random() - .5) * .02, vol);
       }
+
+      // an occasional high shimmer, never on the downbeat
+      if (Math.random() < .55){
+        var s = SHIMMER[(Math.random() * SHIMMER.length) | 0];
+        chime(nf(s), t + (4 + Math.random() * 3) * BEAT, 0.022 + Math.random() * 0.014);
+      }
+
       idx++;
-      timer = setTimeout(bar, BAR * 1000 - 220);
+      timer = setTimeout(bar, BAR * 1000 - 200);
     }
 
     function boot(){
